@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Inventario</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- NAVBAR (Visible solo cuando hay sesión) -->
+    <header class="navbar hidden" id="mainNavbar">
+        <div class="nav-brand">
+            <div class="logo-box">MB</div>
+            <span>GestionBodega</span>
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="#" class="nav-link" data-section="dashboard">Dashboard</a></li>
+            <li><a href="#" class="nav-link" data-section="bodegas">Bodegas</a></li>
+            <li><a href="#" class="nav-link" data-section="productos">Productos</a></li>
+            <li><a href="#" class="nav-link" data-section="movimientos">Movimientos</a></li>
+            <!-- Enlace de Auditoría: Se ocultará por JS si el usuario no es ADMIN -->
+            <li><a href="#" class="nav-link" id="navAuditoria" data-section="auditoria">Auditoría</a></li>
+        </ul>
+
+        <div class="nav-right">
+            <div class="user-info">
+                <span id="userLogueado"></span>
+                <span id="rolLogueado" class="badge-rol"></span>
+            </div>
+            <button id="navBtnLogout" class="btn-outline">Cerrar Sesión</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+
+        <!-- ==========================================
+             PANTALLA 1: LOGIN / REGISTRO
+        =========================================== -->
+        <section id="section-auth" class="auth-wrapper app-section">
+            <div class="hero-card" id="loginCard">
+                <h1 class="hero-title">Iniciar Sesión</h1>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">Usuario</label>
+                        <input type="text" id="loginUsername" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Contraseña</label>
+                        <input type="password" id="loginPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Ingresar</button>
+                    <div id="loginMensaje" class="mensaje-feedback"></div>
+                </form>
+                <p class="toggle-auth">¿No tienes cuenta? <a href="#" id="showRegister">Regístrate aquí</a></p>
+            </div>
+
+            <div class="hero-card hidden" id="registerCard">
+                <h1 class="hero-title">Registro</h1>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="regUsername">Usuario</label>
+                        <input type="text" id="regUsername" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Contraseña</label>
+                        <input type="password" id="regPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regRol">Rol</label>
+                        <select id="regRol" class="form-control" required>
+                            <option value="EMPLEADO">EMPLEADO</option>
+                            <option value="ADMIN">ADMINISTRADOR</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Registrar</button>
+                    <div id="registerMensaje" class="mensaje-feedback"></div>
+                </form>
+                <p class="toggle-auth">¿Ya tienes cuenta? <a href="#" id="showLogin">Inicia sesión</a></p>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             CONTENEDOR DE PANTALLAS DEL SISTEMA
+        =========================================== -->
+        <div id="systemPanel" class="hidden">
+
+            <!-- PANTALLA 2: DASHBOARD -->
+            <section id="section-dashboard" class="app-section">
+                <div class="section-header">
+                    <h2>Panel Principal</h2>
+                    <p>Bienvenido al sistema de gestión.</p>
+                </div>
+                <div class="cards-grid">
+                    <div class="dashboard-card">
+                        <h3>Acceso Rápido</h3>
+                        <p>Navega a través del menú superior para gestionar bodegas, productos y movimientos.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANTALLA 3: BODEGAS -->
+            <section id="section-bodegas" class="app-section hidden">
+                <div class="section-header space-between">
+                    <h2>Gestión de Bodegas</h2>
+                    <button id="btnNuevaBodega" class="btn-primary" style="width: auto;">+ Nueva Bodega</button>
+                </div>
+                
+                <!-- Formulario Bodegas (Oculto por defecto) -->
+                <div id="formBodegaContainer" class="form-panel hidden">
+                    <h3>Registrar/Editar Bodega</h3>
+                    <form id="formBodega" class="grid-form">
+                        <input type="hidden" id="bodegaId">
+                        <div class="form-group"><label>Nombre</label><input type="text" id="bodegaNombre" class="form-control" required></div>
+                        <div class="form-group"><label>Ubicación</label><input type="text" id="bodegaUbicacion" class="form-control" required></div>
+                        <div class="form-group"><label>Capacidad</label><input type="number" id="bodegaCapacidad" class="form-control" required></div>
+                        <div class="form-group"><label>Encargado</label><input type="text" id="bodegaEncargado" class="form-control" required></div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Guardar</button>
+                            <button type="button" class="btn-outline" id="btnCancelarBodega">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                              <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Ubicación</th>
+                                <th>Capacidad</th>
+                                <th>Encargado</th>
+                                <th class="col-acciones">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaBodegasBody">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PANTALLA 4: PRODUCTOS -->
+            <section id="section-productos" class="app-section hidden">
+                <div class="section-header space-between">
+                    <h2>Inventario de Productos</h2>
+                    <button id="btnNuevoProducto" class="btn-primary" style="width: auto;">+ Nuevo Producto</button>
+                </div>
+
+                <div class="filters-bar">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filtroStockBajo"> Ver solo stock bajo (&lt;10)
+                    </label>
+                </div>
+                
+                <!-- Formulario Productos (Oculto por defecto) -->
+                <div id="formProductoContainer" class="form-panel hidden">
+                    <h3>Registrar/Editar Producto</h3>
+                    <form id="formProducto" class="grid-form">
+                        <input type="hidden" id="productoId">
+                        <div class="form-group"><label>Nombre</label><input type="text" id="prodNombre" class="form-control" required></div>
+                        <div class="form-group"><label>Bodega</label><select id="prodBodega" class="form-control" required><option value="">Seleccione una bodega...</option>
+                                <!-- Opciones cargadas dinámicamente --> </select>
+                        </div>
+                        <div class="form-group">
+                        <label>Categoría</label>
+                        <input type="text" id="prodCategoria" name="categoria" list="categoriasList" placeholder="Escribe o selecciona...">
+                        <datalist id="categoriasList">
+                        
+                    </div>
+                        <div class="form-group"><label>Descripción</label><input type="text" id="prodDescripcion" class="form-control"></div>
+                        <div class="form-group"><label>Stock</label><input type="number" id="prodStock" class="form-control" required></div>
+                        <div class="form-group"><label>Precio</label><input type="number" step="0.01" id="prodPrecio" class="form-control" required></div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Guardar</button>
+                            <button type="button" class="btn-outline" id="btnCancelarProducto">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                                <th>Stock</th>
+                                <th>Precio</th>
+                                <th class="col-acciones">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaProductosBody">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PANTALLA 5: MOVIMIENTOS -->
+            <section id="section-movimientos" class="app-section hidden">
+                <div class="section-header">
+                    <h2>Registro de Movimientos</h2>
+                </div>
+
+                <!-- Formulario de Registro de Movimiento -->
+                <div class="form-panel">
+                    <form id="formMovimiento" class="grid-form">
+                        <div class="form-group">
+                            <label>Tipo de Movimiento</label>
+                            <select id="movTipo" class="form-control" required>
+                                <option value="ENTRADA">Entrada</option>
+                                <option value="SALIDA">Salida</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Producto</label><select id="movProducto" class="form-control" required></select></div>
+                        <div class="form-group"><label>Bodega Origen</label><select id="movBodegaOrigen" class="form-control"></select></div>
+                        <div class="form-group"><label>Bodega Destino</label><select id="movBodegaDestino" class="form-control"></select></div>
+                        <div class="form-group"><label>Cantidad</label><input type="number" id="movCantidad" class="form-control" min="1" required></div>
+                        <div class="form-actions" style="grid-column: 1 / -1;">
+                            <button type="submit" class="btn-primary" style="width: auto;">Registrar Movimiento</button>
+                        </div>
+                        
+                        <label for="movFechaHora">Fecha y Hora:</label>
+                        <input type="datetime-local" id="movFechaHora" required>
+                    </form>
+                </div>
+
+                <div class="filters-bar" style="margin-top: 2rem;">
+                    <div class="form-group" style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <div>
+                            <label>Desde:</label>
+                            <input type="date" id="filtroMovDesde" class="form-control">
+                        </div>
+                        <div>
+                            <label>Hasta:</label>
+                            <input type="date" id="filtroMovHasta" class="form-control">
+                        </div>
+                        <button id="btnFiltrarMovimientos" class="btn-outline">Filtrar</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Producto</th>
+                                <th>Origen</th>
+                                <th>Destino</th>
+                                <th>Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaMovimientosBody">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <!-- PANTALLA 6: AUDITORÍA Y REPORTES -->
+            <section id="section-auditoria" class="app-section hidden">
+                <div class="section-header">
+                    <h2>Auditoría y Reportes Generales</h2>
+                </div>
+
+                <!-- Bloque de Reporte General -->
+                <div class="cards-grid" style="margin-bottom: 2rem;">
+                    <div class="dashboard-card">
+                        <h3>Stock Total por Bodega</h3>
+                        <div id="reporteStockBodegas">Cargando datos...</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Productos Más Movidos</h3>
+                        <div id="reporteProductosMovidos">Cargando datos...</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Descargar Registro</h3>
+                        <p>Obtén el histórico completo en archivo de texto.</p>
+                        <button id="btnDescargarReporte" class="btn-primary" style="margin-top: 1rem; width: 100%;">Descargar TXT</button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Auditorías -->
+                <div class="filters-bar">
+                    <div class="form-group" style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <div>
+                            <label>Usuario:</label>
+                            <input type="text" id="filtroAuditoriaUsuario" class="form-control" placeholder="Buscar usuario...">
+                        </div>
+                        <div>
+                            <label>Tipo Operación:</label>
+                            <select id="filtroAuditoriaTipo" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="INSERT">INSERT</option>
+                                <option value="UPDATE">UPDATE</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Usuario</th>
+                                <th>Operación</th>
+                                <th>Entidad afectada</th>
+                                <th>Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAuditoriaBody">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
