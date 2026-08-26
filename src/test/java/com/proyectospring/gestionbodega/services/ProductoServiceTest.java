@@ -40,15 +40,16 @@ class ProductoServiceTest {
         Bodega bodega = new Bodega();
         bodega.setId(1L);
 
-        producto = new Producto(
-                1L,
-                "Laptop",
-                "Electrónica",
-                "Laptop Lenovo",
-                new BigDecimal("2500000"),
-                10,
-                bodega
-        );
+       producto = new Producto(
+        1L,
+        "Laptop",
+        "Electrónica",
+        "Laptop Lenovo",
+        new BigDecimal("2500000"),
+        10,
+        bodega,
+        null
+);
     }
 
 

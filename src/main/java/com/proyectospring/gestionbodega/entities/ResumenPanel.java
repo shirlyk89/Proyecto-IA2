@@ -35,8 +35,8 @@ public class ResumenPanel {
     @Column(nullable = false, unique = true)
     private LocalDate fecha;
 
-    @Lob
-    @Column(name = "contenido_json", nullable = false)
+    
+    @Column(name = "contenido_json", nullable = false, columnDefinition = "TEXT")
     private String contenidoJson;
 
     @Column(length = 100)
