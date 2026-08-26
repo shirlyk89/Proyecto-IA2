@@ -50,4 +50,8 @@ public class Producto {
     @JoinColumn(name = "bodega_id", nullable = false)
     private Bodega bodega;
 
+    @ManyToOne
+    @JoinColumn(name = "proveedor_principal_id")
+    private Proveedor proveedorPrincipal;
+
 }
