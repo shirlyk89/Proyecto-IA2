@@ -64,4 +64,23 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND.value(), "Not Found", ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
+
+        @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleJsonInvalido(
+            org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                "El cuerpo de la petición no es válido: " + ex.getMostSpecificCause().getMessage());
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidacion(
+            org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String mensaje = ex.getBindingResult().getFieldErrors().stream()
+                .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .collect(java.util.stream.Collectors.joining("; "));
+        ErrorResponse error = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Bad Request", mensaje);
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
 }

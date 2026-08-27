@@ -25,6 +25,7 @@ import com.proyectospring.gestionbodega.repositories.OrdenCompraRepository;
 import com.proyectospring.gestionbodega.repositories.ProductoRepository;
 import com.proyectospring.gestionbodega.repositories.ProveedorRepository;
 import com.proyectospring.gestionbodega.services.OrdenCompraService;
+import com.proyectospring.gestionbodega.services.PdfService;
 
 @RestController
 @RequestMapping("/api/ordenes")
@@ -36,16 +37,20 @@ public class OrdenCompraController {
     private final ProveedorRepository proveedorRepository;
     private final BodegaRepository bodegaRepository;
 
+       private final PdfService pdfService;
+
     public OrdenCompraController(OrdenCompraService ordenCompraService,
                                  OrdenCompraRepository ordenCompraRepository,
                                  ProductoRepository productoRepository,
                                  ProveedorRepository proveedorRepository,
-                                 BodegaRepository bodegaRepository) {
+                                 BodegaRepository bodegaRepository,
+                                 PdfService pdfService) {
         this.ordenCompraService = ordenCompraService;
         this.ordenCompraRepository = ordenCompraRepository;
         this.productoRepository = productoRepository;
         this.proveedorRepository = proveedorRepository;
         this.bodegaRepository = bodegaRepository;
+        this.pdfService = pdfService;
     }
 
     @GetMapping
@@ -91,4 +96,39 @@ public class OrdenCompraController {
     public OrdenCompra cambiarEstado(@PathVariable Long id, @RequestBody CambiarEstadoRequest request) {
         return ordenCompraService.cambiarEstado(id, request.getEstado());
     }
+
+        @PostMapping("/{id}/pdf")
+    public java.util.Map<String, Object> generarPdf(@PathVariable Long id) {
+        OrdenCompra orden = ordenCompraRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Orden no encontrada con el ID: " + id));
+
+        byte[] pdf = pdfService.generarPdf(orden);
+        orden.setPdfDocumento(pdf);
+        orden.setPdfFechaGeneracion(java.time.LocalDateTime.now());
+        ordenCompraRepository.save(orden);
+
+        return java.util.Map.of(
+                "mensaje", "PDF generado correctamente",
+                "ordenId", orden.getId(),
+                "pdfFechaGeneracion", orden.getPdfFechaGeneracion()
+        );
+    }
+
+    @GetMapping("/{id}/pdf")
+    public org.springframework.http.ResponseEntity<byte[]> obtenerPdf(@PathVariable Long id) {
+        OrdenCompra orden = ordenCompraRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Orden no encontrada con el ID: " + id));
+
+        if (orden.getPdfDocumento() == null) {
+            throw new RecursoNoEncontradoException(
+                    "Aún no se ha generado el PDF para esta orden. Genera uno primero con POST /ordenes/" + id + "/pdf");
+        }
+
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header("Content-Disposition", "inline; filename=orden-" + id + ".pdf")
+                .body(orden.getPdfDocumento());
+    }
+
+    
 }
