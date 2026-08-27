@@ -49,7 +49,7 @@ public class OrdenCompraServiceImpl implements OrdenCompraService {
     @Transactional
     public OrdenCompra cambiarEstado(Long ordenId, EstadoOrden nuevoEstado) {
         OrdenCompra orden = ordenCompraRepository.findById(ordenId)
-                .orElseThrow(() -> new RuntimeException("Orden no encontrada con el ID: " + ordenId));
+                .orElseThrow(() -> new com.proyectospring.gestionbodega.exceptions.RecursoNoEncontradoException("Orden no encontrada con el ID: " + ordenId));
 
         validarTransicion(orden.getEstado(), nuevoEstado);
 

@@ -56,6 +56,33 @@ public class SecurityConfig {
             // 5. Reportes (Solo ADMIN)
             .requestMatchers("/api/reportes/**").hasRole("ADMIN")
 
+
+                        // --- Reglas nuevas de LogiTrack IQ ---
+
+            // Consultas de KPIs, stock, riesgo y bodegas críticas: ADMIN y AGENTE
+            .requestMatchers(HttpMethod.GET,
+                    "/api/kpis",
+                    "/api/productos/*/stock",
+                    "/api/productos/riesgo",
+                    "/api/bodegas/criticas",
+                    "/api/proveedores",
+                    "/api/ordenes/**",
+                    "/api/panel/resumen"
+            ).hasAnyRole("ADMIN", "AGENTE")
+
+            // Crear orden en BORRADOR: ADMIN y AGENTE
+            .requestMatchers(HttpMethod.POST, "/api/ordenes").hasAnyRole("ADMIN", "AGENTE")
+
+            // Publicar resumen del panel: ADMIN y AGENTE
+            .requestMatchers(HttpMethod.POST, "/api/panel/resumen").hasAnyRole("ADMIN", "AGENTE")
+
+            // Generar/ver PDF de una orden: ADMIN y AGENTE (no cambia estado)
+            .requestMatchers(HttpMethod.POST, "/api/ordenes/*/pdf").hasAnyRole("ADMIN", "AGENTE")
+            .requestMatchers(HttpMethod.GET, "/api/ordenes/*/pdf").hasAnyRole("ADMIN", "AGENTE")
+
+            // Aprobar, recibir o cancelar una orden: SOLO ADMIN
+            .requestMatchers(HttpMethod.PATCH, "/api/ordenes/*/estado").hasRole("ADMIN")
+
             // 6. Cualquier otra ruta requiere autenticación
             .anyRequest().authenticated()
             );
