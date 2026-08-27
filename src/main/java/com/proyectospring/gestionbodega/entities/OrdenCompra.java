@@ -74,7 +74,7 @@ public class OrdenCompra {
     @Column(name = "creado_por", length = 100)
     private String creadoPor;
 
-    @Lob
+    
     @Column(name = "pdf_documento")
     private byte[] pdfDocumento;
 

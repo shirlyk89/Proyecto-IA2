@@ -77,7 +77,7 @@ public class PdfServiceImpl implements PdfService {
         PDExtendedGraphicsState gsTransparente = new PDExtendedGraphicsState();
         gsTransparente.setNonStrokingAlphaConstant(0.25f);
         cs.setGraphicsStateParameters(gsTransparente);
-        cs.setNonStrokingColor(200, 0, 0);
+        cs.setNonStrokingColor(new java.awt.Color(200, 0, 0));
 
         float width = page.getMediaBox().getWidth();
         float height = page.getMediaBox().getHeight();
@@ -93,6 +93,6 @@ public class PdfServiceImpl implements PdfService {
         PDExtendedGraphicsState gsNormal = new PDExtendedGraphicsState();
         gsNormal.setNonStrokingAlphaConstant(1.0f);
         cs.setGraphicsStateParameters(gsNormal);
-        cs.setNonStrokingColor(0, 0, 0);
+        cs.setNonStrokingColor(new java.awt.Color(0, 0, 0));
     }
 }
