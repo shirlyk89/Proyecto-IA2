@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LogiTrack IQ — Torre de control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ===== LOGIN ===== -->
+  <section id="login-view" class="view login-view">
+    <div class="login-card">
+      <div class="brand">
+        <span class="brand-mark">LT</span>
+        <div>
+          <h1>LogiTrack IQ</h1>
+          <p class="brand-sub">Torre de control de inventario</p>
+        </div>
+      </div>
+      <form id="login-form">
+        <label for="username">Usuario</label>
+        <input id="username" name="username" type="text" autocomplete="username" required />
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <button type="submit" id="login-btn">Entrar</button>
+        <p id="login-error" class="error-text" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section id="dashboard-view" class="view dashboard-view" hidden>
+
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-mark small">LT</span>
+        <span class="topbar-title">LogiTrack IQ</span>
+      </div>
+      <div class="topbar-meta">
+        <span id="calculated-at" class="calculated-at"></span>
+        <span id="user-badge" class="user-badge"></span>
+        <button id="logout-btn" class="btn-ghost">Salir</button>
+      </div>
+    </header>
+
+    <main class="layout">
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <article class="kpi-card kpi-risk">
+          <span class="kpi-label">Productos en riesgo</span>
+          <span class="kpi-value" id="kpi-riesgo">—</span>
+        </article>
+        <article class="kpi-card kpi-quiebre">
+          <span class="kpi-label">Productos en quiebre</span>
+          <span class="kpi-value" id="kpi-quiebre">—</span>
+        </article>
+        <article class="kpi-card kpi-orders">
+          <span class="kpi-label">Órdenes por aprobar</span>
+          <span class="kpi-value" id="kpi-ordenes-cantidad">—</span>
+          <span class="kpi-sub" id="kpi-ordenes-monto"></span>
+        </article>
+        <article class="kpi-card kpi-moves">
+          <span class="kpi-label">Movimientos de ayer</span>
+          <div class="kpi-moves-row">
+            <span><b id="mov-entrada">—</b> entrada</span>
+            <span><b id="mov-salida">—</b> salida</span>
+            <span><b id="mov-transferencia">—</b> transf.</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="main-grid">
+
+        <!-- LEFT: tables -->
+        <div class="col-main">
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Productos en riesgo</h2>
+              <span class="panel-tag">stock &lt; punto de reorden</span>
+            </div>
+            <div class="table-wrap">
+              <table id="tabla-riesgo">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Stock</th>
+                    <th>Consumo/día</th>
+                    <th>Punto reorden</th>
+                    <th>Días cobertura</th>
+                    <th>Estado</th>
+                    <th>Bodega sugerida</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-riesgo-body">
+                  <tr><td colspan="7" class="empty-row">Cargando…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Órdenes en borrador</h2>
+              <span class="panel-tag">pendientes de aprobación</span>
+            </div>
+            <div class="table-wrap">
+              <table id="tabla-ordenes">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Proveedor</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Bodega destino</th>
+                    <th>PDF</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-ordenes-body">
+                  <tr><td colspan="8" class="empty-row">Cargando…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Ocupación por bodega</h2>
+            </div>
+            <div id="ocupacion-list" class="ocupacion-list"></div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT: sidebar briefing -->
+        <aside class="col-side">
+          <section class="briefing">
+            <div class="briefing-head">
+              <span class="briefing-dot"></span>
+              <span>BITÁCORA DEL DÍA</span>
+              <span id="briefing-fecha" class="briefing-fecha"></span>
+            </div>
+            <p id="briefing-narrativa" class="briefing-narrativa">Sin resumen publicado todavía.</p>
+
+            <div class="briefing-block">
+              <h3>Alertas</h3>
+              <ul id="briefing-alertas" class="briefing-list"></ul>
+            </div>
+
+            <div class="briefing-block">
+              <h3>Acciones sugeridas</h3>
+              <ul id="briefing-acciones" class="briefing-list"></ul>
+            </div>
+          </section>
+        </aside>
+
+      </div>
+    </main>
+  </section>
+
+  <!-- ===== VISOR PDF ===== -->
+  <div id="pdf-overlay" class="pdf-overlay" hidden>
+    <div class="pdf-modal">
+      <div class="pdf-modal-head">
+        <span id="pdf-modal-title">PDF de la orden</span>
+        <button id="pdf-close-btn" class="btn-ghost">Cerrar</button>
+      </div>
+      <iframe id="pdf-frame" title="PDF de la orden"></iframe>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
