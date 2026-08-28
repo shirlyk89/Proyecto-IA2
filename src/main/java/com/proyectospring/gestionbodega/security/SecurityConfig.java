@@ -38,24 +38,6 @@ public class SecurityConfig {
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers("/", "/index.html", "/app.js", "/styles.css", "/favicon.ico").permitAll()
 
-            // 2. LECTURA (GET): Ambos roles pueden ver
-            .requestMatchers(HttpMethod.GET, "/api/bodegas/**", "/api/productos/**", "/api/movimientos/**").hasAnyRole("ADMIN", "EMPLEADO")
-
-            // 3. OPERACIÓN (POST): Ambos roles pueden registrar (ej. realizar un movimiento)
-            .requestMatchers(HttpMethod.POST, "/api/movimientos/**").hasAnyRole("ADMIN", "EMPLEADO")
-
-            // 4. ADMINISTRACIÓN EXCLUSIVA: Solo ADMIN puede modificar o borrar
-            .requestMatchers(HttpMethod.PUT, "/api/movimientos/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/movimientos/**").hasRole("ADMIN")
-            
-            // (Opcional: Si quieres proteger Bodegas/Productos para ediciones solo ADMIN)
-            .requestMatchers(HttpMethod.POST, "/api/bodegas/**", "/api/productos/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.PUT, "/api/bodegas/**", "/api/productos/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/bodegas/**", "/api/productos/**").hasRole("ADMIN")
-
-            // 5. Reportes (Solo ADMIN)
-            .requestMatchers("/api/reportes/**").hasRole("ADMIN")
-
 
                         // --- Reglas nuevas de LogiTrack IQ ---
 
@@ -82,6 +64,28 @@ public class SecurityConfig {
 
             // Aprobar, recibir o cancelar una orden: SOLO ADMIN
             .requestMatchers(HttpMethod.PATCH, "/api/ordenes/*/estado").hasRole("ADMIN")
+
+
+            // 2. LECTURA (GET): Ambos roles pueden ver
+            .requestMatchers(HttpMethod.GET, "/api/bodegas/**", "/api/productos/**", "/api/movimientos/**").hasAnyRole("ADMIN", "EMPLEADO")
+
+            // 3. OPERACIÓN (POST): Ambos roles pueden registrar (ej. realizar un movimiento)
+            .requestMatchers(HttpMethod.POST, "/api/movimientos/**").hasAnyRole("ADMIN", "EMPLEADO")
+
+            // 4. ADMINISTRACIÓN EXCLUSIVA: Solo ADMIN puede modificar o borrar
+            .requestMatchers(HttpMethod.PUT, "/api/movimientos/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/movimientos/**").hasRole("ADMIN")
+            
+            // (Opcional: Si quieres proteger Bodegas/Productos para ediciones solo ADMIN)
+            .requestMatchers(HttpMethod.POST, "/api/bodegas/**", "/api/productos/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/bodegas/**", "/api/productos/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/bodegas/**", "/api/productos/**").hasRole("ADMIN")
+
+            // 5. Reportes (Solo ADMIN)
+            .requestMatchers("/api/reportes/**").hasRole("ADMIN")
+
+
+            
 
             // 6. Cualquier otra ruta requiere autenticación
             .anyRequest().authenticated()
