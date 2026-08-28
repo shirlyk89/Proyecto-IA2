@@ -1,0 +1,198 @@
+{
+  "name": "Resumen diario de inventario",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Ejecuta la revisión diaria de inventario: consulta KPIs y productos en riesgo, crea como máximo una orden en borrador si corresponde, y publica el resumen del panel siguiendo exactamente las reglas del system message.",
+        "options": {
+          "systemMessage": "# SKILL: Operación LogiTrack (flujo diario de inventario)\n\n## Reglas obligatorias\n1. Consulta primero consultar_kpis y consultar_productos_en_riesgo antes de cualquier otra acción.\n2. Si hay productos en riesgo, toma SOLO el primero de la lista y crea una orden con crear_orden_borrador. Nunca más de una orden por ejecución.\n   La cantidad se calcula así: cantidad = ceil(max(1, puntoReorden * 2 - stockTotal))\n3. NUNCA apruebes, canceles ni recibas órdenes. No existe herramienta para eso; es intencional.\n4. Publica con publicar_resumen un JSON que cumpla exactamente el contrato: fecha (YYYY-MM-DD), narrativa (20-500 caracteres), alertas (arreglo, puede ir vacío, cada una enlaza al menos un id real), accionesSugeridas (arreglo, puede ir vacío, cada una enlaza exactamente un id real).\n5. Si una herramienta falla, repórtalo claramente en tu respuesta final, no lo escondas ni lo inventes.\n\n## Orden recomendado\n1. consultar_kpis\n2. consultar_productos_en_riesgo\n3. Si hay riesgo: consultar_bodegas_criticas -> crear_orden_borrador para el primer producto\n4. publicar_resumen con lo encontrado\n5. Reporta éxito o el error específico si algo falló"
+        }
+      },
+      "id": "2d7a7cab-0c8f-4a54-a609-ff0e524c5323",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -176,
+        32
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sseEndpoint": "http://mcp-server:3939/sse",
+        "options": {}
+      },
+      "id": "66b08c44-e7cb-45cd-93c8-5dadb4bc2250",
+      "name": "LogiTrack MCP Tools",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1,
+      "position": [
+        0,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "resultado",
+              "type": "string",
+              "value": "EXITO: flujo diario de inventario ejecutado correctamente"
+            },
+            {
+              "name": "respuestaAgente",
+              "type": "string",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "747e42b8-6439-400e-8341-8f463024f4d0",
+      "name": "Registrar exito",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "resultado",
+              "type": "string",
+              "value": "ERROR: el flujo diario de inventario falló"
+            },
+            {
+              "name": "detalleError",
+              "type": "string",
+              "value": "={{ $json.error?.message || JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2cb059d5-50d7-42c6-8ad1-cf9ee8204989",
+      "name": "Registrar error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a8195a21-8449-4aad-b042-bf221f364f44",
+      "name": "Schedule Trigger1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -448,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        368
+      ],
+      "id": "98c06b3a-2df6-41f6-84ce-4cb289d573b8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9oErcCAEbFYdCd8m",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "LogiTrack MCP Tools": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Registrar exito",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0b308a7e-8d47-4c96-ac48-378ad98a674f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4f786ee846a16f1b546d6d06a9917437bb2003848853ce0fee035621aacc7349"
+  },
+  "nodeGroups": [],
+  "id": "rVCCnVHdBqojXK3z",
+  "tags": []
+}

@@ -8,6 +8,16 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres.cddszmuoujubgfyfefvl
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
 
+
+  mcp-server:
+    build: ./mcp-server
+    ports:
+      - "3939:3939"
+    environment:
+      API_BASE_URL: http://backend:8081/api
+      AGENTE_USERNAME: agente1
+      AGENTE_PASSWORD: agente2026
+
   n8n:
     image: n8nio/n8n
     ports:
