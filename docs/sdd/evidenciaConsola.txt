@@ -1,0 +1,109 @@
+EVIDENCIA DE CONSOLA — CICLOS TDD (rojo → verde)
+====================================================
+
+------------------------------------------------------
+1. ROJO — InventarioServiceTest (antes de InventarioServiceImpl)
+------------------------------------------------------
+VS Code, al crear InventarioServiceTest.java referenciando la clase
+InventarioServiceImpl (que aún no existía):
+
+  InventarioServiceImpl cannot be resolved to a type   Java(16777218)
+  👉 Resolve unknown type
+
+(El test no compilaba porque la implementación no existía todavía —
+evidencia de que el test se escribió antes que el código.)
+
+
+------------------------------------------------------
+2. VERDE — InventarioServiceTest (después de InventarioServiceImpl)
+------------------------------------------------------
+> .\mvnw test -Dtest=InventarioServiceTest
+
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.proyectospring.gestionbodega.services.InventarioServiceTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.244 s
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] BUILD SUCCESS
+
+
+------------------------------------------------------
+3. ROJO — OrdenCompraServiceTest (antes de OrdenCompraServiceImpl)
+------------------------------------------------------
+Al correr `.\mvnw test -Dtest=OrdenCompraServiceTest` antes de crear
+OrdenCompraServiceImpl, la compilación fallaba de la misma forma: el test
+importaba y usaba `OrdenCompraServiceImpl`, clase que todavía no existía
+en el proyecto, por lo que Maven no podía compilar el módulo de test.
+
+
+------------------------------------------------------
+4. VERDE — OrdenCompraServiceTest (después de OrdenCompraServiceImpl)
+------------------------------------------------------
+> .\mvnw test -Dtest=OrdenCompraServiceTest
+
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.proyectospring.gestionbodega.services.OrdenCompraServiceTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.379 s
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] BUILD SUCCESS
+
+
+------------------------------------------------------
+5. VERDE — Suite completa del proyecto
+------------------------------------------------------
+> .\mvnw clean test
+
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 36, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] BUILD SUCCESS
+
+
+------------------------------------------------------
+6. ROJO → VERDE — Prueba de integración (403 para AGENTE)
+------------------------------------------------------
+Primer intento (fallando por token mal enviado en la prueba, "Bearer Bearer"):
+  java.lang.IllegalStateException: No se encontró el token en la
+  respuesta de login: {"status":401, ... "Usuario o contraseña incorrectos."}
+
+Después de corregir el constraint de la base de datos (usuarios_rol_check
+no incluía AGENTE) y el formato del token:
+
+=== REGISTRO status: 200
+=== REGISTRO body: Usuario registrado exitosamente
+=== LOGIN status: 200
+=== LOGIN body: {"token":"...","rol":"ROLE_AGENTE"}
+
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+
+------------------------------------------------------
+7. Prueba manual — resumen con severidad inválida (400) y conservación
+   del resumen anterior
+------------------------------------------------------
+POST /api/panel/resumen con {"severidad": "URGENTE", ...}:
+
+  {
+    "status": 400,
+    "error": "Bad Request",
+    "message": "El cuerpo de la petición no es válido: Cannot deserialize
+      value of type `com.proyectospring.gestionbodega.entities.Severidad`
+      from String \"URGENTE\": not one of the values accepted for Enum
+      class: [ALTA, MEDIA, BAJA]"
+  }
+
+GET /api/panel/resumen inmediatamente después → sigue devolviendo el
+resumen válido anterior (id: 1), sin cambios ni corrupción.
