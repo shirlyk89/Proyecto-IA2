@@ -36,12 +36,9 @@ cada hito a su commit real:
 | # | Mensaje exigido | Commit real usado | Hash | Qué contiene |
 |---|---|---|---|---|
 | 1 | `docs: define LogiTrack IQ scope` | *(exacto)* | `334b3d0f5a574fb725c11936494934072cd5a88a` | Los 4 documentos de `docs/sdd/` (propuesta, especificación, diseño, tareas) |
-| 2 | `test: define reorder and order-state rules` | `060f6d4` — *"feat: se añadio el manejo de inventario en service y repository"* | `060f6d4` | `EstadoCobertura`, `InventarioService`/`InventarioServiceImpl` y `InventarioServiceTest` (6 casos de reglas de reorden) |
-| 2b | *(mismo hito, reglas de orden)* | `4e7a0d4` — *"feat: implementacionOrdenCompra service y excepcion para probar tests"* | `4e7a0d4` | `TransicionInvalidaException`, `OrdenCompraService`/`OrdenCompraServiceImpl` y `OrdenCompraServiceTest` (6 casos de transición de estados) |
-| 3 | `feat: implement LogiTrack IQ rules` | `4551f91` — *"feat: add inventory management and order handling features, including new controllers and exception handling"* | `4551f91` | `InventarioController`, `OrdenCompraController`, `ProveedorController` y el resto del `GlobalExceptionHandler` que expone las reglas anteriores por la API REST |
-
-*(Para ver el hash completo de cada uno: `git log --oneline --all` y buscar
-el prefijo, o `git rev-parse 060f6d4` etc.)*
+| 2 | `test: define reorder and order-state rules` | *"feat: se añadio el manejo de inventario en service y repository"* | `060f6d489a0099c2c98729184b618cd08f7db727` | `EstadoCobertura`, `InventarioService`/`InventarioServiceImpl` y `InventarioServiceTest` (6 casos de reglas de reorden) |
+| 2b | *(mismo hito, reglas de orden)* | *"feat: implementacionOrdenCompra service y excepcion para probar tests"* | `4e7a0d4378cc43df55086269e09d5227aa0420ba` | `TransicionInvalidaException`, `OrdenCompraService`/`OrdenCompraServiceImpl` y `OrdenCompraServiceTest` (6 casos de transición de estados) |
+| 3 | `feat: implement LogiTrack IQ rules` | *"feat: add inventory management and order handling features, including new controllers and exception handling"* | `4551f91f0fd47920440a41aabdeb56581232d50c` | `InventarioController`, `OrdenCompraController`, `ProveedorController` y el resto del `GlobalExceptionHandler` que expone las reglas anteriores por la API REST |
 
 ## Evidencia de prueba inicial fallando y ejecución final en verde
 

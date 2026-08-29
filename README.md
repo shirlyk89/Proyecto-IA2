@@ -1,267 +1,104 @@
-# LogiTrack S.A. — Sistema de Gestión y Auditoría de Bodegas
+# LogiTrack IQ — Torre de control de inventario
 
-Sistema backend centralizado desarrollado en **Spring Boot** para la gestión de inventarios distribuidos en múltiples bodegas, con control de movimientos, auditoría automática de cambios y seguridad basada en JWT.
+Extensión del backend de LogiTrack (Spring Boot) que detecta productos en
+riesgo de faltante, propone una orden de compra en BORRADOR mediante un
+flujo automatizado (n8n + MCP), y permite a un administrador aprobarla y
+recibirla — reflejando todo en un dashboard conectado a datos reales.
 
----
-
-## 📖 Descripción del proyecto
-
-LogiTrack S.A. administra varias bodegas ubicadas en distintas ciudades, encargadas de almacenar productos y gestionar movimientos de inventario (entradas, salidas y transferencias). Anteriormente este control se realizaba manualmente en hojas de cálculo, sin trazabilidad ni control de accesos.
-
-Este proyecto reemplaza ese proceso manual por un sistema backend robusto que permite:
-
-- Controlar todos los movimientos de inventario entre bodegas.
-- Registrar automáticamente los cambios realizados por cada usuario (auditoría).
-- Proteger la información mediante autenticación **JWT** y roles (`ADMIN` / `EMPLEADO`).
-- Exponer una API REST documentada con **Swagger/OpenAPI 3**.
-- Consultar reportes y estadísticas de inventario en tiempo real.
-
-### Objetivo general
-Desarrollar un sistema de gestión y auditoría de bodegas que permita registrar transacciones de inventario y generar reportes auditables de los cambios realizados por cada usuario.
-
----
-
-## 🧱 Arquitectura del proyecto
+## Arquitectura
 
 ```
-src/
- ├─ controller/     → Endpoints REST (Bodegas, Productos, Movimientos, Auth, Auditoría, Reportes)
- ├─ service/         → Lógica de negocio
- ├─ repository/      → Acceso a datos (Spring Data JPA)
- ├─ model/           → Entidades (Bodega, Producto, Movimiento, Usuario, Auditoria)
- ├─ config/          → Configuración general (Swagger, CORS, etc.)
- ├─ security/        → Spring Security + JWT (filtros, proveedor de tokens, roles)
- └─ exception/       → Manejo global de errores (@ControllerAdvice)
-
-frontend/            → HTML/CSS/JS básico para probar login y consultas principales
-schema.sql           → Script de creación de tablas
-data.sql             → Datos de prueba iniciales
+n8n → MCP Server (6 tools) → API Spring Boot (JWT, rol AGENTE) → PostgreSQL
+                                       ↑
+                                  Dashboard (HTML/CSS/JS) ← Administrador
 ```
 
-### Módulos funcionales
+Ver diagrama completo en [`diagrama-arquitectura.svg`](./diagrama-arquitectura.svg)
+y el detalle de diseño en [`docs/sdd/03-diseno.md`](./docs/sdd/03-diseno.md).
 
-| Módulo | Descripción |
+## Requisitos
+
+- Docker Desktop
+- Node.js 18+ (solo si quieres correr el MCP server o el frontend fuera de Docker)
+- Una cuenta de Supabase/PostgreSQL ya configurada (las credenciales van en `.env`, no se suben al repo)
+
+## Instalación y ejecución
+
+1. Clona el repositorio y entra a la carpeta del proyecto.
+2. Crea un archivo `.env` en la raíz con:
+   ```
+   DB_PASSWORD=<contraseña real de la base de datos>
+   AGENTE_PASSWORD=<contraseña del usuario AGENTE de prueba>
+   ```
+3. Levanta todo con Docker:
+   ```
+   docker compose up --build
+   ```
+   Esto levanta 3 servicios:
+   - **backend** — API Spring Boot en `http://localhost:8081`
+   - **mcp-server** — servidor MCP (HTTP/SSE) en `http://localhost:3939`
+   - **n8n** — editor de flujos en `http://localhost:5678`
+4. Abre el dashboard: `frontend/index.html` con doble clic en el navegador
+   (no necesita servidor propio, consume la API directamente).
+5. Swagger/OpenAPI de la API: `http://localhost:8081/swagger-ui/index.html`
+
+## Usuarios de prueba
+
+| Usuario | Rol | Notas |
+|---|---|---|
+| `admin1` | ADMIN | Puede aprobar/recibir/cancelar órdenes y registrar movimientos manuales |
+| `agente1` | AGENTE | Solo lectura + crear borrador + publicar resumen (usado por el MCP server) |
+
+*(Ajusta o crea estos usuarios vía `POST /api/auth/register` si no existen
+todavía en tu base de datos — ver `docs/sdd/02-especificacion.md` para la
+matriz completa de permisos.)*
+
+## Rutas principales de la API
+
+| Método y ruta | Qué hace |
 |---|---|
-| **Bodegas** | CRUD completo (id, nombre, ubicación, capacidad, encargado) |
-| **Productos** | CRUD completo (id, nombre, categoría, stock, precio) |
-| **Movimientos** | Registro de ENTRADA / SALIDA / TRANSFERENCIA entre bodegas |
-| **Auditoría** | Registro automático de INSERT/UPDATE/DELETE con usuario y valores anteriores/nuevos |
-| **Seguridad** | Login/registro con JWT, rutas protegidas por rol |
-| **Reportes** | Stock por bodega, productos más movidos, filtros por fecha/usuario |
+| `POST /api/auth/register`, `POST /api/auth/login` | Registro y login (JWT) |
+| `GET /api/kpis` | Los 4 indicadores del dashboard |
+| `GET /api/productos/{id}/stock` | Stock total y por bodega de un producto |
+| `GET /api/productos/riesgo` | Productos por debajo del punto de reorden |
+| `GET /api/bodegas/criticas` | Bodegas con ocupación ≥ 90% |
+| `GET /api/proveedores` | Proveedores precargados |
+| `GET /api/ordenes`, `POST /api/ordenes` | Listar / crear orden en BORRADOR |
+| `PATCH /api/ordenes/{id}/estado` | Cambiar estado de una orden (solo ADMIN para aprobar/recibir/cancelar) |
+| `POST /api/ordenes/{id}/pdf`, `GET /api/ordenes/{id}/pdf` | Generar y descargar el PDF de la orden |
+| `POST /api/panel/resumen`, `GET /api/panel/resumen` | Publicar y consultar el resumen diario |
 
----
-
-## ⚙️ Tecnologías utilizadas
-
-- **Java 17+**
-- **Spring Boot 3.x**
-- **Spring Data JPA**
-- **Spring Security + JWT**
-- **MySQL**
-- **Swagger / OpenAPI 3**
-- **Maven**
-- **HTML / CSS / JavaScript** (frontend de prueba)
-
----
-
-## 🚀 Instrucciones de instalación y ejecución
-
-### Requisitos previos
-- Java 17 o superior
-- Maven 3.8+
-- MySQL 8.x instalado y corriendo
-- (Opcional) Postman o Swagger UI para probar los endpoints
-
-### 1. Clonar el repositorio
-```bash
-git clone https://github.com/usuario/logitrack-backend.git
-cd logitrack-backend
-```
-
-### 2. Configurar la base de datos
-Crear la base de datos en MySQL:
-```sql
-CREATE DATABASE logitrack_db;
-```
-
-Editar `src/main/resources/application.properties`:
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/logitrack_db
-spring.datasource.username=root
-spring.datasource.password=tu_password
-spring.jpa.hibernate.ddl-auto=update
-spring.sql.init.mode=always
-
-jwt.secret=clave_secreta_super_segura
-jwt.expiration=3600000
-```
-
-### 3. Ejecutar scripts SQL (opcional si usas ddl-auto)
-Los scripts `schema.sql` y `data.sql` se ejecutan automáticamente al iniciar la aplicación (ubicados en `src/main/resources/`).
-
-### 4. Compilar y ejecutar
-```bash
-mvn clean install
-mvn spring-boot:run
-```
-
-La API quedará disponible en:
-```
-http://localhost:8080
-```
-
-### 5. Acceder a la documentación Swagger
-```
-http://localhost:8080/swagger-ui/index.html
-```
-
-### 6. Ejecutar el frontend de prueba
-Abrir el archivo `frontend/index.html` en el navegador, o servirlo con una extensión tipo Live Server. Asegúrate de que el backend esté corriendo en `http://localhost:8080`.
-
----
-
-## 🔐 Autenticación
-
-### Registro de usuario
-```http
-POST /auth/register
-Content-Type: application/json
-
-{
-  "username": "jperez",
-  "password": "123456",
-  "rol": "EMPLEADO"
-}
-```
-
-### Login
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "username": "jperez",
-  "password": "123456"
-}
-```
-
-**Respuesta:**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "username": "jperez",
-  "rol": "EMPLEADO"
-}
-```
-
-Para consumir los endpoints protegidos, incluir el token en el header:
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
----
-
-## 📌 Ejemplos de endpoints
-
-### Bodegas
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/bodegas` | Listar todas las bodegas |
-| GET | `/bodegas/{id}` | Consultar una bodega |
-| POST | `/bodegas` | Crear una bodega |
-| PUT | `/bodegas/{id}` | Actualizar una bodega |
-| DELETE | `/bodegas/{id}` | Eliminar una bodega (solo ADMIN) |
-
-### Productos
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/productos` | Listar todos los productos |
-| GET | `/productos/stock-bajo` | Productos con stock < 10 |
-| POST | `/productos` | Crear un producto |
-| PUT | `/productos/{id}` | Actualizar un producto |
-| DELETE | `/productos/{id}` | Eliminar un producto (solo ADMIN) |
-
-### Movimientos
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/movimientos` | Listar movimientos |
-| GET | `/movimientos/fecha?inicio=...&fin=...` | Movimientos por rango de fechas |
-| POST | `/movimientos` | Registrar entrada/salida/transferencia |
-
-### Auditoría
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/auditorias` | Listar auditorías (solo ADMIN) |
-| GET | `/auditorias/usuario/{username}` | Auditorías por usuario |
-| GET | `/auditorias/tipo/{tipoOperacion}` | Auditorías por tipo (INSERT/UPDATE/DELETE) |
-
-### Reportes
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/reportes/resumen` | Stock total por bodega y productos más movidos |
-
----
-
-## ⚠️ Manejo de errores
-
-Todas las respuestas de error siguen un formato estandarizado gracias a `@ControllerAdvice`:
-
-```json
-{
-  "timestamp": "2026-07-24T10:15:30",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Bodega con id 5 no encontrada",
-  "path": "/bodegas/5"
-}
-```
-
-Códigos manejados: `400` (validación), `401` (no autenticado), `403` (sin permisos), `404` (no encontrado), `500` (error interno).
-
----
-
-## 🧪 Pruebas
-
-- Colección de Postman disponible en `/docs/postman_collection.json` *(agregar según se genere)*
-- Capturas de pruebas y Swagger disponibles en `/docs/capturas/`
-- Se recomienda probar el flujo completo: registro → login → crear bodega/producto → registrar movimiento → consultar auditoría → ver reporte.
-
----
-
-## 👥 Roles y permisos
-
-| Rol | Permisos |
-|---|---|
-| **ADMIN** | Acceso completo: CRUD de bodegas/productos, eliminar registros, ver auditorías y reportes |
-| **EMPLEADO** | Consultar bodegas/productos, registrar movimientos, ver su propio historial |
-
----
-
-## 📂 Estructura de entregables
+## Estructura del repositorio
 
 ```
-├── src/                    → Código fuente del backend
-├── frontend/                → Interfaz de prueba (HTML/CSS/JS)
-├── schema.sql                → Script de creación de tablas
-├── data.sql                  → Datos de prueba
-├── docs/
-│   ├── diagrama_clases.png
-│   ├── arquitectura.md
-│   └── capturas/
-├── README.md                 → Este documento
+src/                    Backend Spring Boot (entidades, servicios, controllers, tests)
+frontend/               Dashboard HTML/CSS/JS
+mcp-server/             Servidor MCP (Node.js) con las 6 herramientas
+n8n/                    Export del flujo "Resumen diario de inventario"
+skills/operacion-logitrack/SKILL.md   Reglas operativas del agente
+docs/sdd/                Documentos de diseño y evidencia SDD/TDD
+docker-compose.yml       Orquesta backend + mcp-server + n8n
+schema.sql, data.sql     Estructura y datos de prueba reproducibles
 ```
 
----
+## Correr los tests
 
-## 👨‍💻 Autores
+```
+.\mvnw clean test
+```
 
-| Integrante | Módulos desarrollados |
-|---|---|
-| Persona A | Bodegas, Productos, Movimientos, Scripts SQL |
-| Persona B | Seguridad/JWT, Auditoría, Reportes, Frontend, Documentación Swagger |
+## MCP server — probar las herramientas manualmente
 
----
+```
+cd mcp-server
+npm install
+cp .env.example .env   # y edítalo con tus credenciales AGENTE
+npx @modelcontextprotocol/inspector node src/index.js
+```
 
-## 📄 Licencia
+## Flujo de n8n
 
-Proyecto desarrollado con fines académicos para LogiTrack S.A.
+Importa `n8n/resumen-diario-inventario.json` en tu instancia de n8n
+(`http://localhost:5678` → Import from File). Necesitarás conectar tu
+propia credencial del modelo de IA (Gemini/OpenAI/Anthropic) en el nodo
+"Chat Model" después de importar.

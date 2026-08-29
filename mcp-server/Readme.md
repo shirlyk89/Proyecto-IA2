@@ -54,3 +54,17 @@ npx @modelcontextprotocol/inspector node src/index.js
 
 Esto abre una interfaz web donde puedes ejecutar cada una de las 6
 herramientas manualmente, ver el request/response, y guardar capturas.
+
+
+## Ejecución por HTTP/SSE (para n8n)
+
+Además de `stdio`, el servidor también puede correr por HTTP/SSE, necesario
+para que n8n (en su propio contenedor Docker) se conecte por red:
+
+```bash
+npm run start:http
+```
+
+Esto lo levanta en `http://localhost:3939`, con el endpoint SSE en
+`/sse`. Dentro de la red de Docker (docker-compose), n8n debe usar
+`http://mcp-server:3939/sse` en vez de `localhost`.
